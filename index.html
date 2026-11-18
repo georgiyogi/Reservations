@@ -170,16 +170,31 @@ function askBook(i){
 }
 
 function doBook(i){
-  var c=DATA.classes[i], f={date:c.date,time:c.time,cls:c.name,code:DATA.student?CODE:''};
-  if(!DATA.student){f.name=val('fName');f.phone=val('fPhone');f.email=val('fEmail');f.notes=val('fNotes');}
-  var b=document.getElementById('go'); b.disabled=true; b.textContent='Booking…';
+  var c=DATA.classes[i], st=DATA.student, f={date:c.date,time:c.time,cls:c.name,code:st?CODE:''};
+  if(!st){
+    f.name=val('fName');f.phone=val('fPhone');f.email=val('fEmail');f.notes=val('fNotes');
+    var e=document.getElementById('mErr');
+    if(!f.name){e.textContent='Please add your name.';return;}
+    if(f.phone.replace('+','').length<8){e.textContent='Please add a valid WhatsApp number.';return;}
+    if(f.email&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(f.email)){e.textContent='Please check your email address.';return;}
+  }
+  var when=dayLabel(c.date)+' · '+c.time;
+  var linkMsg=(!st&&!f.email)?'I\'ll send you the class link on WhatsApp before we start.':'You\'ll get the class link by email.';
+  openM('<h2>YOU\'RE IN!</h2><p class="when">'+esc(c.name)+' · '+esc(when)+'</p><p class="ok">'+linkMsg+' See you on the mat.</p>'+
+    '<p class="small" id="conf" style="margin:10px 0 0">Saving your spot…</p><div id="extra"></div>'+
+    '<div class="actions"><button class="btn ghost" onclick="closeM()">Done</button></div>');
+  c.taken++; if(st){st.used++;st.left--;DATA.mine.push({date:c.date,time:c.time,name:c.name});} render();
   run('book',f,function(r){
-    var h='<h2>YOU\'RE IN!</h2><p class="when">'+esc(r.cls)+' · '+esc(r.when)+'</p><p class="ok">Join the class here:<br><a href="'+esc(r.meet||'')+'" target="_blank" rel="noopener" style="color:inherit;font-weight:700">'+esc(r.meet||'')+'</a><br>See you on the mat.</p>';
-    if(r.trial&&r.tikkie) h+='<div class="actions"><a class="btn plum" style="text-decoration:none" href="'+esc(r.tikkie)+'" target="_blank" rel="noopener">Pay €14 with Tikkie</a></div>';
-    if(r.renew) h+='<p style="margin:12px 0 0;font-size:15px"><b>Heads up:</b> after this one you have <b>1 class left</b> on your pass. Message Georgi on WhatsApp to renew.</p>';
-    h+='<div class="actions"><button class="btn ghost" onclick="closeM();load()">Done</button></div>';
-    openM(h);
-  },function(m){document.getElementById('mErr').textContent=m;b.disabled=false;b.textContent='Book my spot';});
+    var el=document.getElementById('conf'); if(el) el.textContent='Confirmed ✓';
+    var x='';
+    if(r.trial&&r.tikkie) x+='<div class="actions"><a class="btn plum" style="text-decoration:none" href="'+esc(r.tikkie)+'" target="_blank" rel="noopener">Pay €14 with Tikkie</a></div>';
+    if(r.renew) x+='<p style="margin:12px 0 0;font-size:15px"><b>Heads up:</b> after this one you have <b>1 class left</b> on your pass. Message Georgi on WhatsApp to renew.</p>';
+    var ex=document.getElementById('extra'); if(ex) ex.innerHTML=x;
+    load();
+  },function(m){
+    openM('<h2>OOPS</h2><p class="err" style="font-size:16px">'+esc(m)+'</p><div class="actions"><button class="btn ghost" onclick="closeM()">Back</button></div>');
+    load();
+  });
 }
 
 function askCancel(i){

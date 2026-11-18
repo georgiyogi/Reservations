@@ -176,6 +176,7 @@ function doBook(i){
   run('book',f,function(r){
     var h='<h2>YOU\'RE IN!</h2><p class="when">'+esc(r.cls)+' · '+esc(r.when)+'</p><p class="ok">I\'ll send you the class link on WhatsApp before we start. See you on the mat.</p>';
     if(r.trial&&r.tikkie) h+='<div class="actions"><a class="btn plum" style="text-decoration:none" href="'+esc(r.tikkie)+'" target="_blank" rel="noopener">Pay €14 with Tikkie</a></div>';
+    if(r.renew) h+='<p style="margin:12px 0 0;font-size:15px"><b>Heads up:</b> after this one you have <b>1 class left</b> on your pass. Message Georgi on WhatsApp to renew.</p>';
     h+='<div class="actions"><button class="btn ghost" onclick="closeM();load()">Done</button></div>';
     openM(h);
   },function(m){document.getElementById('mErr').textContent=m;b.disabled=false;b.textContent='Book my spot';});

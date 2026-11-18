@@ -83,6 +83,9 @@ var API = 'https://script.google.com/macros/s/AKfycbygFd0JEeazgVL4ZH1SvOiQxIX_Ie
 var BOOK_URL = location.origin + '/';
 var KEY = ''; try { KEY = localStorage.getItem('gy_admin') || ''; } catch (e) {}
 var D = null, TAB = 'alumnos', Q = '';
+var PRICES = {'Strippenkaart 10':110,'Mensual 1x':30,'Mensual 2x':55,'Clase suelta':17,'Prueba':14,'Privada':50};
+var PRICES_AFTER_3M = {'Mensual 1x':35,'Mensual 2x':69};
+function priceFor(type,since,on){var p=PRICES[type]; if(since&&PRICES_AFTER_3M[type]!=null){var d=new Date(since+'T12:00:00Z'); d.setUTCMonth(d.getUTCMonth()+3); if(new Date((on||D.today)+'T12:00:00Z')>=d) p=PRICES_AFTER_3M[type];} return p;}
 
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function api(action, data){
@@ -189,6 +192,7 @@ function closeM(){modal.classList.remove('on');}
 modal.addEventListener('click',function(e){if(e.target===modal)closeM();});
 function typeOptions(sel){return D.types.map(function(t){return '<option'+(t===sel?' selected':'')+'>'+esc(t)+'</option>';}).join('');}
 function val(id){var e=document.getElementById(id);return e?e.value.trim():'';}
+function priceHook(sel,inp,since,dateId){var s=document.getElementById(sel),i=document.getElementById(inp),dt=dateId&&document.getElementById(dateId);function set(){var p=priceFor(s.value,since,dt&&dt.value);i.value=p!=null?p:'';}s.onchange=set;if(dt)dt.onchange=set;set();}
 
 function newStudent(ri){
   var r=ri!=null?D.reservations[ri]:{};
@@ -197,12 +201,14 @@ function newStudent(ri){
     '<label for="nPhone">WhatsApp</label><input type="tel" id="nPhone" value="'+esc(r.phone||'')+'" placeholder="+31…">'+
     '<label for="nEmail">Email (opcional)</label><input type="email" id="nEmail" value="'+esc(r.email||'')+'">'+
     '<div class="row2"><div><label for="nType">Plan</label><select id="nType">'+typeOptions('Strippenkaart 10')+'</select></div>'+
-    '<div><label for="nPaid">Pagó (€)</label><input type="number" id="nPaid" inputmode="decimal"></div></div>'+
+    '<div><label for="nPaid">Pagó (€) *</label><input type="number" id="nPaid" inputmode="decimal"></div></div>'+
     '<label for="nDate">Desde</label><input type="date" id="nDate" value="'+esc(D.today)+'">'+
     '<div id="mErr" class="err"></div><div class="actions"><button class="btn ghost" onclick="closeM()">Cancelar</button><button class="btn plum" id="go">Crear</button></div>');
+  priceHook('nType','nPaid');
   document.getElementById('go').onclick=function(){
     var b=this, f={name:val('nName'),phone:val('nPhone'),email:val('nEmail'),type:val('nType'),paid:val('nPaid'),date:val('nDate')};
     if(!f.name){document.getElementById('mErr').textContent='Falta el nombre.';return;}
+    if(f.paid===''){document.getElementById('mErr').textContent='Falta cuánto pagó.';return;}
     b.disabled=true;b.textContent='Creando…';
     api('adminAdd',f).then(function(res){
       var s={name:f.name,phone:f.phone,code:res.code};
@@ -219,11 +225,13 @@ function renew(i){
   var s=D.students[i];
   openM('<h2>RENOVAR</h2><p class="meta">'+esc(s.name)+' · ahora: '+esc(s.type||'-')+'</p>'+
     '<div class="row2"><div><label for="rType">Plan</label><select id="rType">'+typeOptions(s.type)+'</select></div>'+
-    '<div><label for="rPaid">Pagó (€)</label><input type="number" id="rPaid" inputmode="decimal"></div></div>'+
+    '<div><label for="rPaid">Pagó (€) *</label><input type="number" id="rPaid" inputmode="decimal"></div></div>'+
     '<label for="rDate">Desde</label><input type="date" id="rDate" value="'+esc(D.today)+'">'+
-    '<p class="meta">Se reinicia el contador de clases desde esa fecha. El código y el link siguen iguales.</p>'+
+    '<p class="meta">Se reinicia el contador de clases desde esa fecha. El código y el link siguen iguales.'+(s.since?' Alumna desde el '+esc(new Date(s.since+'T12:00:00Z').toLocaleDateString('es-AR',{timeZone:'UTC'}))+'.':'')+'</p>'+
     '<div id="mErr" class="err"></div><div class="actions"><button class="btn ghost" onclick="closeM()">Cancelar</button><button class="btn plum" id="go">Renovar</button></div>');
+  priceHook('rType','rPaid',s.since,'rDate');
   document.getElementById('go').onclick=function(){
+    if(val('rPaid')===''){document.getElementById('mErr').textContent='Falta cuánto pagó.';return;}
     var b=this; b.disabled=true; b.textContent='Guardando…';
     api('adminRenew',{row:s.row,type:val('rType'),paid:val('rPaid'),date:val('rDate')}).then(function(){
       openM('<h2>RENOVADO</h2><p class="ok">'+esc(s.name)+' tiene su plan renovado.</p><div class="actions" style="justify-content:flex-start">'+

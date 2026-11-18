@@ -63,6 +63,16 @@ input:focus,textarea:focus{border-color:var(--forest)}
 .ok{background:var(--yellow);border-radius:18px;padding:14px 16px;margin:4px 0 0;font-family:'Garamond',serif;font-size:19px;line-height:1.3}
 footer{margin-top:40px;font-size:13px;color:var(--muted);text-align:center}
 footer a{color:inherit}
+.sheet{position:relative}
+.conf{display:flex;align-items:center;gap:10px;margin:16px 0 0;font-size:17px;font-weight:700;color:var(--muted)}
+.spin{width:20px;height:20px;border:3px solid var(--line);border-top-color:var(--forest);border-radius:50%;animation:sp .8s linear infinite;flex:none}
+@keyframes sp{to{transform:rotate(360deg)}}
+.conf.done{color:#1f7a45}
+.tick{width:34px;height:34px;border-radius:50%;background:#1f7a45;color:#fff;display:grid;place-items:center;font-size:20px;flex:none;animation:pop .55s cubic-bezier(.2,1.6,.4,1)}
+@keyframes pop{0%{transform:scale(0) rotate(-40deg)}100%{transform:scale(1) rotate(0)}}
+.bit{position:absolute;width:9px;height:9px;border-radius:3px;pointer-events:none;animation:fly 1s ease-out forwards}
+@keyframes fly{to{transform:translate(var(--x),var(--y)) rotate(var(--r));opacity:0}}
+@media (prefers-reduced-motion:reduce){.spin,.tick,.bit{animation:none}.bit{display:none}}
 @media (min-width:640px){.modal{align-items:center}}
 </style>
 </head>
@@ -169,6 +179,16 @@ function askBook(i){
   openM(h);
 }
 
+function burst(el){
+  var cols=['#0E5655','#E0DC8D','#784963','#1f7a45','#CFCA74'], r=el.getBoundingClientRect(), s=sheet.getBoundingClientRect();
+  for(var k=0;k<18;k++){
+    var b=document.createElement('span'); b.className='bit';
+    b.style.left=(r.left-s.left+17)+'px'; b.style.top=(r.top-s.top+17+sheet.scrollTop)+'px';
+    b.style.background=cols[k%cols.length];
+    b.style.setProperty('--x',(Math.random()*260-60)+'px'); b.style.setProperty('--y',(-Math.random()*150-20)+'px'); b.style.setProperty('--r',(Math.random()*540)+'deg');
+    sheet.appendChild(b); setTimeout(function(x){return function(){x.remove();};}(b),1100);
+  }
+}
 function doBook(i){
   var c=DATA.classes[i], st=DATA.student, f={date:c.date,time:c.time,cls:c.name,code:st?CODE:''};
   if(!st){
@@ -181,11 +201,11 @@ function doBook(i){
   var when=dayLabel(c.date)+' · '+c.time;
   var linkMsg=(!st&&!f.email)?'I\'ll send you the class link on WhatsApp before we start.':'You\'ll get the class link by email.';
   openM('<h2>YOU\'RE IN!</h2><p class="when">'+esc(c.name)+' · '+esc(when)+'</p><p class="ok">'+linkMsg+' See you on the mat.</p>'+
-    '<p class="small" id="conf" style="margin:10px 0 0">Saving your spot…</p><div id="extra"></div>'+
+    '<div class="conf" id="conf"><span class="spin"></span>Saving your spot…</div><div id="extra"></div>'+
     '<div class="actions"><button class="btn ghost" onclick="closeM()">Done</button></div>');
   c.taken++; if(st){st.used++;st.left--;DATA.mine.push({date:c.date,time:c.time,name:c.name});} render();
   run('book',f,function(r){
-    var el=document.getElementById('conf'); if(el) el.textContent='Confirmed ✓';
+    var el=document.getElementById('conf'); if(el){el.className='conf done';el.innerHTML='<span class="tick">✓</span>Confirmed! Your spot is saved.';burst(el);}
     var x='';
     if(r.trial&&r.tikkie) x+='<div class="actions"><a class="btn plum" style="text-decoration:none" href="'+esc(r.tikkie)+'" target="_blank" rel="noopener">Pay €14 with Tikkie</a></div>';
     if(r.renew) x+='<p style="margin:12px 0 0;font-size:15px"><b>Heads up:</b> after this one you have <b>1 class left</b> on your pass. Message Georgi on WhatsApp to renew.</p>';

@@ -111,7 +111,7 @@ function render(){
   var d=DATA, top=document.getElementById('top'), s=d.student, h='';
   if(s){
     var pct=s.included?Math.min(100,Math.round(s.used/s.included*100)):0;
-    h+='<div class="card"><p class="hi">Hi, '+esc(s.name.split(' ')[0])+'</p>'+
+    h+='<div class="card"><p class="hi">Hola, '+esc(s.name.split(' ')[0])+'</p>'+
        '<div class="small">'+esc(s.type)+(s.expires?' · valid until '+esc(s.expires):'')+'</div>'+
        '<div class="bar"><i style="width:'+pct+'%"></i></div>'+
        '<div class="row" style="justify-content:space-between"><b>'+s.used+' of '+s.included+' classes used</b><span class="small">'+s.left+' left</span></div></div>';
